@@ -102,6 +102,9 @@ class DataProcess:
         mu_r_full = []
         p_r_full = []
         p_arrive = []
+        p_die_full = []
+        p_die = []
+        p_leave2 = []
         for i in range(1, self.num_class+1):
             df_cond = df[condition_low & condition_class(i)]
             df_cond2 = df[condition_readmit & condition_low & condition_class(i)]
@@ -112,17 +115,28 @@ class DataProcess:
             p_r_full.append(len(df_cond2.index) / len(df_cond.index))
 
             df_cond = df[condition_low & condition_readmit & condition_class(i) & condition_low_now & condition_alive]
-            mu_r_low.append(1 / (df_cond['LOS (Days)'].sum() / len(df_cond.index)))
+            mu_r_low.append((df_cond['LOS (Days)'].sum() / len(df_cond.index)))
 
             df_cond = df[~condition_low & condition_readmit & condition_class(i) & condition_low_now & condition_alive]
-            mu_r_full.append(1 / (df_cond['LOS (Days)'].sum() / len(df_cond.index)))
+            mu_r_full.append((df_cond['LOS (Days)'].sum() / len(df_cond.index)))
 
             df_cond = df[condition_class(i)]
             p_arrive.append(len(df_cond) / num_timeslot)
 
+            df_cond = df[~condition_low & condition_class(i)]
+            df_cond2 = df[condition_class(i) & ~condition_low & ~condition_alive]
+            p_die_full.append(len(df_cond2.index) / len(df_cond.index))
+
+            df_cond = df[condition_class(i) & ~condition_alive]
+            df_cond2 = df[condition_class(i)]
+            p_die.append(len(df_cond.index) / len(df_cond2.index))
+
+            df_cond = df[condition_low & condition_class(i) & condition_alive]
+            p_leave2.append(1 / (df_cond['LOS (Days)'].mean()*24*60/self.time_interval))
+
         p_arrive = [1 - np.sum(p_arrive)] + p_arrive
-        delta_readmission_load = [p_r_full[i] / mu_r_full[i] - p_r_low[i] / mu_r_low[i] for i in range(len(mu_r_full))]
+        delta_readmission_load = [p_r_full[i] * mu_r_full[i] - p_r_low[i] * mu_r_low[i] for i in range(len(mu_r_full))]
         print('Data process finished')
         
-        return p_arrive, p_leave, delta_readmission_load
+        return p_arrive, p_leave, delta_readmission_load, p_die
 

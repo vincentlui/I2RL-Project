@@ -8,9 +8,9 @@ from network.network import PatientClassificationNet, PatientGroupNet
 from argparse import ArgumentParser
 
 
-def _train_classification_net(net, trainloader, testloader, threshold, epoch=5):
+def _train_classification_net(net, trainloader, testloader, threshold, epoch=5, wd=1e-4):
     criterion = nn.BCELoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9, weight_decay=wd)
     for epoch in range(epoch):
         total_loss = 0
         net.train()
@@ -43,7 +43,7 @@ def _train_classification_net(net, trainloader, testloader, threshold, epoch=5):
         print(f'epoch {epoch}: recall: {recall} precision: {precision} f1_score: {f1_score} loss:{total_loss}')
 
 
-def _prepare_data():
+def _prepare_data(seed=6):
     df = pd.read_excel(r'data.xlsx')
     df = df[~df['Fallnummer'].isnull()]
 
@@ -63,6 +63,8 @@ def _prepare_data():
 
     num_train = int(len(X) * 0.8)
     shuffle_indices = np.arange(len(X))
+    np.random.seed(seed)
+    np.random.shuffle(shuffle_indices)
     np.random.shuffle(shuffle_indices)
     X = X[shuffle_indices]
     Y = Y[shuffle_indices]
@@ -78,10 +80,13 @@ def _prepare_data():
     return num_train, num_feature, trainloader, testloader, X_train, y_train, X_test, y_test
 
 
-def _calculate_class_boundary(net, X, num_train, num_class, percetage):
+def _calculate_class_boundary(net, X, num_train, num_class, percentage=None):
     outputs = net(X)
     v, _ = outputs.sort(0)
-    class_boundary = torch.Tensor([v[int(num_train * percetage[i] - 1)] for i in range(0, num_class)])
+    if percentage is None:
+        class_boundary = torch.Tensor([v[int(num_train * i / num_class - 1)] for i in range(1, num_class + 1)])
+    else:
+        class_boundary = torch.Tensor([v[int(num_train * percentage[i] - 1)] for i in range(0, num_class)])
     return class_boundary
 
 
@@ -112,6 +117,7 @@ def _evaluate_group(net, X_train, X_test):
     out2 = net(X_test)
     train_dist = [torch.sum(out == i).item() for i in range(1, net.num_class + 1)]
     test_dist = [torch.sum(out2 == i).item() for i in range(1, net.num_class + 1)]
+
     print('class distribution')
     print('train class distribution', train_dist)
     print('test class distribution', test_dist)
@@ -124,7 +130,7 @@ def main():
                         help="Number of class", default=3)
     parser.add_argument("-b", "--percentage", dest="percentage",
                         help="Percentage for class boundary",
-                        nargs="*", type=float, default=[0.33, 0.67, 1])
+                        nargs="*", type=float, default=None)
 
     args = parser.parse_args()
     num_class = int(args.num_class)
@@ -134,10 +140,10 @@ def main():
 
     net = PatientClassificationNet(num_feature, 256)
     threshold = y_train.nonzero().size(0) / num_train
-    _train_classification_net(net, trainloader, testloader, threshold, epoch=50)
+    _train_classification_net(net, trainloader, testloader, threshold, epoch=25)
     result = _evaluate_patient_class(net, testloader, threshold)
 
-    class_boundary = _calculate_class_boundary(net, X_train, num_train, num_class, percentage)
+    class_boundary = _calculate_class_boundary(net, X_train, num_train, num_class, percentage=percentage)
     group_net = PatientGroupNet(net, class_boundary)
 
     train_dist, test_dist = _evaluate_group(group_net, X_train, X_test)
