@@ -14,7 +14,7 @@ def main():
     # p_leave = [0.010825796872474158, 0.0038442559604472373, 0.00335442100653245, 0.0027426663004428303, 0.0026808956939254076, 0.0026285227575753496, 0.002433672892274736, 0.0018672590670831529]
     # delta = [0, 0.00749376480848956, 0.023252303608424292, 0.38966471920753987, 0.1, 0.04492930254495119, 0.019348297623417, 1.1000634771910827, 1.080419000471227]
     print(p_arrive, p_leave, delta)
-    env = Environment(5, 30, p_arrive, p_leave, delta, max_leave=1)
+    env = Environment(5, 10, p_arrive, p_leave, delta, max_leave=3)
     env.calc_dynamics()
     rl = ValueIterationRL(env)
     x, a = rl.value_iteration_sparse()

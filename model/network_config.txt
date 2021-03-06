@@ -1,7 +1,0 @@
-num train: 4255
-num feature: 21
-Death classification metrics: (0.7560975609756098, 0.15736040609137056, 0.2605042016806723)
-train group distribution: [850, 836, 842, 872, 854]
-test group distribution: [202, 220, 210, 221, 211]
-num_class: 5
-class boundary: tensor([0.0216, 0.0470, 0.0711, 0.1185, 0.6725])
