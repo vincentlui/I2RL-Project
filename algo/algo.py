@@ -25,7 +25,7 @@ class ValueIterationRL:
             tmp = np.sum(self.trans_matrix * (rewards + self.gamma * v_state.reshape(1, -1)), axis=-1)
             tmp += rewards_penalty.T
             new_v_state = np.max(tmp, axis=0)
-            new_v_state[0] = 0
+#             new_v_state[0] = 0
             total_error = np.abs(new_v_state - v_state)
             # print((total_error > self.theta).nonzero()[0])
             v_state = new_v_state
@@ -58,7 +58,7 @@ class ValueIterationRL:
                 tmp.append(self.trans_matrix[a] @ (rewards.T[a] + self.gamma * v_state) + rewards_penalty.T[a])
             # tmp = np.sum(self.trans_matrix * (rewards + self.gamma * v_state.reshape(1, -1)), axis=-1)
             new_v_state = np.max(tmp, axis=0)
-            new_v_state[0] = 0
+#             new_v_state[0] = 0
             best_action = np.argmax(tmp, axis=0)
             total_error = np.abs(new_v_state - v_state)
             v_state = new_v_state
